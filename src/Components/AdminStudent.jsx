@@ -8,9 +8,11 @@ import ClipLoader from "react-spinners/ClipLoader";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 import StudentContext from "../context/StudentContext";
+// import StudentState from "../context/StudentState";
 
 const Tablestudents = () => {
-  const { students, updateStudent, deleteStudent } = useContext(StudentContext);
+  const { students, updateStudent, deleteStudent,setStudents} = useContext(StudentContext);
+  // const { setStudents} = useContext(StudentState);
   const [editingRow, setEditingRow] = useState(-1);
   const [editingStudentIndex, setEditingStudentIndex] = useState();
   const [editedStudentData, setEditedStudentData] = useState({});
@@ -44,6 +46,32 @@ const Tablestudents = () => {
     "Non-Prefs 2",
     "Non-Prefs 3",
   ];
+  const studentKeyMapping = {
+    "Name": "name",
+    "Email Id": "email",
+    "Roll No": "rollNo",
+    "CGPA": "cgpa",
+    "Program": "program",
+    "Department": "department",
+    "TA Type": "taType",
+    "Dept Pref 1": "deptPref1",
+    "Grade Dept Pref 1": "gradeDeptPref1",
+    "Dept Pref 2": "deptPref2",
+    "Grade Dept Pref 2": "gradeDeptPref2",
+    "Other Pref 1": "otherPref1",
+    "Grade Other Pref 1": "gradeOtherPref1",
+    "Other Pref 2": "otherPref2",
+    "Grade Other Pref 2": "gradeOtherPref2",
+    "Other Pref 3": "otherPref3",
+    "Grade Other Pref 3": "gradeOtherPref3",
+    "Other Pref 4": "otherPref4",
+    "Grade Other Pref 4": "gradeOtherPref4",
+    "Other Pref 5": "otherPref5",
+    "Grade Other Pref 5": "gradeOtherPref5",
+    "Non-Prefs 1": "nonPrefs1",
+    "Non-Prefs 2": "nonPrefs2",
+    "Non-Prefs 3": "nonPrefs3",
+  };
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "ascending",
@@ -64,39 +92,61 @@ const Tablestudents = () => {
       count++;
     }
     setEditingStudentIndex(count);
+    setEditedStudentData(students[count]);
   };
 
   const handleSave = async (ID) => {
     setLoader(true);
-    if (
-      JSON.stringify(editedStudentData) ===
-      JSON.stringify(students[editingStudentIndex])
-    ) {
-      handleCancel();
-      return;
-    }
     const originalStudentData = students[editingStudentIndex];
     const updatedData = {};
+    const hasChanges = Object.keys(editedStudentData).some(
+      key => editedStudentData[key] !== students[editingStudentIndex][key]
+    );
 
+    if (!hasChanges) {
+      handleCancel(); // Exit editing mode if no changes
+      setLoader(false); // Ensure loader is turned off here
+      return;
+    }
+
+  
+    // Construct the updatedData object with only changed fields
     for (const key in editedStudentData) {
-      if (editedStudentData[key] !== originalStudentData[key]) {
-        updatedData[key.toLowerCase()] = editedStudentData[key];
-      }
+        if (editedStudentData[key] !== originalStudentData[key]) {
+            updatedData[key] = editedStudentData[key]; // Maintain original key case
+        }
     }
-    const res = await updateStudent(ID, updatedData);
-    setLoader(false);
-    if (res.status === "Success") {
-      Swal.fire("Updated!", "Student has been updated", "success");
-    } else {
-      Swal.fire("Oops!", res.message, "error");
-    }
-    handleCancel();
-  };
 
-  const handleCancel = () => {
+    console.log("Updated Data being sent to backend:", updatedData); // Log to ensure correct data is sent
+
+    try {
+        const res = await updateStudent(ID, updatedData); // Call the updateStudent function
+
+        console.log("Response from server:", res); // Log the response for debugging
+
+        setLoader(false); // Turn off the loader
+
+        if (res.status === "Success") {
+            Swal.fire("Updated!", "Student has been updated", "success");
+            window.location.reload();
+            
+        } else {
+            Swal.fire("Oops!", res.message, "error"); // Show error message
+        }
+        handleCancel();
+    } catch (error) {
+        console.error("Error during save operation:", error);
+        Swal.fire("Error", "Failed to update student. Please try again.", "error");
+        setLoader(false); // Ensure loader is turned off
+    }
+    
+};
+
+const handleCancel = () => {
     setEditingRow(-1);
     setEditedStudentData({});
-  };
+};
+
 
   const handleDelete = async (studentId) => {
     Swal.fire({
@@ -119,15 +169,23 @@ const Tablestudents = () => {
     });
   };
 
-  const handleInputChange = (e, key) => {
-    const updatedData = { ...editedStudentData, [key]: e.target.value };
-    setEditedStudentData(updatedData);
+  const handleInputChange = (e, label) => {
+    const value = e.target.value;
+    const studentKey = studentKeyMapping[label];
+  
+    setEditedStudentData((prevData) => ({
+      ...prevData,
+      [studentKey]: value,
+    }));
   };
 
   useEffect(() => {
-    // This code will run after the state has been updated
-    setEditedStudentData({ ...students[editingStudentIndex] });
-  }, [editingStudentIndex]);
+    if (students[editingStudentIndex]) {
+      setEditedStudentData({ ...students[editingStudentIndex] });
+    } else {
+      console.warn('Invalid editingStudentIndex:', editingStudentIndex);
+    }
+  }, [editingStudentIndex, students]);
 
   useEffect(() => {
     setSortedStudent(extractedData);
@@ -229,20 +287,22 @@ const Tablestudents = () => {
       >
         <td className="border p-2">{index + 1}</td>
         {data.slice(0, 24).map((item, itemIndex) => (
-          <td className="border p-2" key={itemIndex}>
-            {isEditing ? (
-              <input
-                type="text"
-                value={
-                  editedStudentData[customLabels[itemIndex]] || data[itemIndex]
-                }
-                onChange={(e) => handleInputChange(e, customLabels[itemIndex])}
-              />
-            ) : (
-              item
-            )}
-          </td>
-        ))}
+        <td className="border p-2" key={itemIndex}>
+          {isEditing ? (
+            <input
+              type="text"
+              value={
+                editedStudentData[studentKeyMapping[customLabels[itemIndex]]] !== undefined
+                  ? editedStudentData[studentKeyMapping[customLabels[itemIndex]]]
+                  : data[itemIndex] 
+              }
+              onChange={(e) => handleInputChange(e, customLabels[itemIndex])}
+            />
+          ) : (
+            item 
+          )}
+        </td>
+      ))}
         <td className="border p-2">
           {isEditing ? (
             loader ? (

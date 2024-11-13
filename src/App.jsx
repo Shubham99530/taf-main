@@ -6,6 +6,7 @@ import Department from './Pages/DepartmentPage';
 import Professor from './Pages/ProfessorPage';
 import StudentForm from './Pages/TAForm';
 import StudentState from './context/StudentState';
+// import AdminStudent from './Components/AdminStudent';
 import CourseState from './context/CourseState';
 import DepartmentState from './context/DepartmentState';
 import AuthState from './context/AuthState';

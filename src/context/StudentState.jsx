@@ -4,6 +4,7 @@ import io from "socket.io-client";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 import StudentContext from "./StudentContext";
+// import AdminStudent from "../Components/AdminStudent"
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -18,11 +19,17 @@ const StudentState = (props) => {
     getLogsFromBackend();
 
     socket.on("studentUpdated", (updatedStudent) => {
-      setStudents((prevStudents) =>
-        prevStudents.map((student) =>
-          student._id === updatedStudent._id ? updatedStudent : student
-        )
-      );
+      // console.log("111")
+      if (updatedStudent) {
+    console.log("Received updated student:", updatedStudent); // Log the received data for debugging
+    setStudents((prevStudents) =>
+      prevStudents.map((student) =>
+        student._id === updatedStudent._id ? updatedStudent : student
+      )
+    );
+  } else {
+    console.error("Received null for updatedStudent");
+  }
     });
 
     socket.on("studentsAdded", (newStudents) => {
@@ -46,22 +53,29 @@ const StudentState = (props) => {
     };
   }, []);
 
-  const updateStudent = async (studentId, updatedData) => {
+   const updateStudent = async (studentId, updatedData) => {
     try {
+      // console.log("Student state mai updated data : ",updatedData)
+      // console.log("Student ki ID :",studentId)
       const response = await axios.put(
         `${API}/api/student/${studentId}`,
         updatedData
       );
+      // console.log("herer is respinse")
+      console.log(response)
       if (response.status != 200) {
+        // console.log("hello");
         console.error("Failed to update student data on the backend");
         return {
           status: "Failed",
           message: "Failed to update student data on the backend",
         };
       } else {
+       console.log("The student is updated here in student state");
         return { status: "Success" };
       }
     } catch (error) {
+
       console.error("Error updating student data:", error);
       return { status: "Failed", message: "Error updating student data" };
     }
@@ -198,6 +212,7 @@ const StudentState = (props) => {
       value={{
         students,
         logs,
+        setStudents,
         getStudentsFromFile,
         updateStudent,
         deleteStudent,

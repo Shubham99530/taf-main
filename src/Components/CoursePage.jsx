@@ -1056,7 +1056,7 @@ const CoursePage = () => {
             handlePrefFilter
           )}
 
-          <div className="overflow-auto">
+          <div className="overflow-auto" style={{height : '100vh'}}>
             <table className="w-full border-collapse border ">
               <thead className="sticky top-0">
                 <tr className="bg-gray-200 text-gray-700 ">

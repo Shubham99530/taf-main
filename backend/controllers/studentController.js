@@ -333,6 +333,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
 {
   const studentId = req.params.id;
   let updates = req.body;
+  console.log(updates);
   try
   {
     // Step 1: Validate that the student exists
@@ -355,6 +356,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
 
     if ( "taType" in updates )
     {
+      console.log("update nahi hui");
       const validTypes = [
         "Credit",
         "Paid",
@@ -396,6 +398,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
 
     if ( "cgpa" in updates )
     {
+      // console.log("cgpa ki entry");
       // Check cgpa range
       if ( updates.cgpa < 0 || updates.cgpa > 10 )
       {
@@ -405,7 +408,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
 
     // Check for valid grade values
     // const validGrades = [ 'A+(10)', 'A(10)', 'A-(9)', 'B(8)', 'B-(7)', 'C(6)', 'C-(5)', 'D(4)', 'Course Not Done' ]
-
+    // console.log("1")
     if (
       "departmentPreferences" in updates
     )
@@ -431,6 +434,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
       //   return res.status( 400 ).json( { message: "Invalid Grade Value in departmental preferences" } );
       // }
     }
+    // console.log("2")
     if (
       "nonDepartmentPreferences" in updates
     )
@@ -455,13 +459,14 @@ const updateStudent = asyncHandler( async ( req, res ) =>
       //   return res.status( 400 ).json( { message: "Invalid Grade Value in other preferences" } )
       // }
     }
+    // console.log("3")
     if ( "nonPreferences" in updates && updates.nonPreferences.length > 3 )
     {
       return res
         .status( 400 )
         .json( { message: "Atmost 3 non-preferences allowed" } );
     }
-
+    // console.log("4")
     // Step 4: Check if the courses in updated departmentPreferences are of the same department
     if ( "departmentPreferences" in updates )
     {
@@ -484,29 +489,35 @@ const updateStudent = asyncHandler( async ( req, res ) =>
           } );
       }
     }
-
+    // console.log("5")
+     // Debugging: Log the updates object before applying the changes
+    console.log("Updates to be applied:", updates);
     // Step 5: Update the student with validated values
-    const updateStudent = await Student.findByIdAndUpdate( studentId, updates, {
-      new: true,
-    } )
-
-    const updatedStudent = updateStudent.flatStudent;
-
-    try
-    {
-
-      if ( updateStudent.departmentPreferences && updateStudent.departmentPreferences.length > 0 )
-      {
-        await sendForm( updateStudent.emailId, updateStudent ); // Call the sendForm function for each student
+    // try {
+      const originalStudent = await Student.findById(studentId);
+      if (!originalStudent) {
+        console.log("No student found with this ID");
+        return;
       }
+      // console.log("Original student:", originalStudent);
+  
+      const updatedStudent = await Student.findByIdAndUpdate(studentId, updates, { new: true });
+      console.log(updatedStudent);
+      
+      io.emit( "studentUpdated", updatedStudent )
+      // console.log("main idhr nhi aya")
+      // if (!updatedStudent) {
+      //   console.log("Update failed or student not found");
+      // } else {
+      //   console.log("Updated student:", updatedStudent);
+      // }
+    // } catch (error) {
+    //   // 
+    //   console.error("Error updating student:", error);
+    // }
 
-    } catch ( error )
-    {
-      console.error( 'Error sending student data via email:', error );
-    }
-
-    io.emit( 'studentUpdated', updatedStudent )
-
+   
+    
     return res
       .status( 200 )
       .json( {
@@ -515,6 +526,7 @@ const updateStudent = asyncHandler( async ( req, res ) =>
       } );
   } catch ( error )
   {
+    console.log("kya main aya")
     return res
       .status( 500 )
       .json( { message: "Internal server error", error: error.message } );
