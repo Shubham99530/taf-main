@@ -23,11 +23,7 @@ const courseSchema = new mongoose.Schema( {
         required: true,
         default: 4,
     },
-    professor: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Professor',
-        default: null,
-    },
+    professor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Professor' }],
     totalStudents: {
         type: Number,
         required: true,

@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import DashboardCardList from "./DashboardCards"; // Import your DashboardCardList component
-
+import AdminManagement from './AdminManagement';
 const Dashboard = () => {
   const [currentRound, setCurrentRound] = useState(null);
   const [formOpened, setFormOpened] = useState(true);
@@ -207,7 +207,7 @@ const Dashboard = () => {
         console.error("Error closing feedback form:", error);
       });
   };
-
+  
   return (
     <div>
       <div className="mb-4 space-x-4 flex">
@@ -237,7 +237,10 @@ const Dashboard = () => {
           {currentRound === null ? "No Round is going on" : currentRound}
         </p>
       </div>
-
+        <div style={{display :'grid' ,top : '20px', gap : '20px', position:'fixed',right : '40px', width : '20vw' }}>
+            <h1 className="text-2xl font-bold"></h1>
+            <AdminManagement />
+        </div>  
       <div className="flex mt-3">
         <button
           onClick={toggleRound}
@@ -279,6 +282,7 @@ const Dashboard = () => {
       </div>
 
       {/* Include your DashboardCardList component here */}
+        
       <DashboardCardList />
     </div>
   );

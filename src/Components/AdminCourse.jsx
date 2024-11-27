@@ -10,9 +10,8 @@ import * as XLSX from "xlsx";
 import CourseContext from "../context/CourseContext";
 
 const CourseTable = () => {
-  const { courses, updateCourse, deleteCourse } = useContext(CourseContext);
+  const { courses, updateCourse, deleteCourse, addCourse } = useContext(CourseContext);
   const [editingRow, setEditingRow] = useState(null);
-  // const [editedCourseData, setEditedCourseData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [loader, setLoader] = useState(false);
   const columnName = {
@@ -36,29 +35,63 @@ const CourseTable = () => {
     setSortedCourse(courses);
   }, [courses]);
 
+  const handleAddCourse = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: "Add Course",
+      html:
+        '<input id="name" class="swal2-input" placeholder="Course Name">' +
+        '<input id="code" class="swal2-input" placeholder="Course Code">' +
+        '<input id="acronym" class="swal2-input" placeholder="Acronym">' +
+        '<input id="department" class="swal2-input" placeholder="Department">' +
+        '<input id="credits" class="swal2-input" placeholder="Credits" type="number">' +
+        '<input id="professor" class="swal2-input" placeholder="Professor">' +
+        '<input id="totalStudents" class="swal2-input" placeholder="Total Students" type="number">' +
+        '<input id="taStudentRatio" class="swal2-input" placeholder="TA Student Ratio" type="number">',
+      focusConfirm: false,
+      preConfirm: () => {
+        const name = document.getElementById("name").value;
+        const code = document.getElementById("code").value;
+        const acronym = document.getElementById("acronym").value;
+        const department = document.getElementById("department").value;
+        const credits = document.getElementById("credits").value;
+        const professor = document.getElementById("professor").value;
+        const totalStudents = document.getElementById("totalStudents").value;
+        const taStudentRatio = document.getElementById("taStudentRatio").value;
+
+        if (!name || !code || !acronym || !department || !credits || !totalStudents || !taStudentRatio) {
+          Swal.showValidationMessage("Please fill out all required fields");
+          return null;
+        }
+
+        return { name, code, acronym, department, credits, professor, totalStudents, taStudentRatio };
+      },
+    });
+
+    if (formValues) {
+      try {
+        console.log("hello");
+        const res = await addCourse(formValues);
+        if (res.status === "Success") {
+          Swal.fire("Success", "Course added successfully!", "success");
+        } else {
+          Swal.fire("Error", res.message, "error");
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to add course", "error");
+      }
+    }
+  };
+
   const handleEdit = (row) => {
     setEditingRow(row);
-    // setEditedCourseData({ ...courses[rowIndex] });
   };
 
   const handleSave = async (row) => {
-    /*    if (JSON.stringify(editedCourseData) === JSON.stringify(courses[rowIndex])) {
-      handleCancel();
-      return;
-    } */
-    /*     const originalCourseData = courses[rowIndex];
-    const updatedData = {};
-
-    for (const key in editedCourseData) {
-      if (editedCourseData[key] !== originalCourseData[key]) {
-        updatedData[key] = editedCourseData[key]; // Add changed field to updatedData
-      }
-    } */
     setLoader(true);
     const res = await updateCourse(row._id, row);
     setLoader(false);
     if (res.status === "Success") {
-      Swal.fire("Updated!", "Course has been Updated", "success");
+      Swal.fire("Updated!", "Course has been updated", "success");
     } else {
       Swal.fire("Oops!", res.message, "error");
     }
@@ -67,7 +100,6 @@ const CourseTable = () => {
 
   const handleCancel = () => {
     setEditingRow(null);
-    // setEditedCourseData({});
   };
 
   const handleDelete = async (courseId) => {
@@ -82,7 +114,6 @@ const CourseTable = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         const res = await deleteCourse(courseId);
-
         if (res.status === "Success") {
           Swal.fire("Deleted!", "Course has been deleted", "success");
         } else {
@@ -98,15 +129,11 @@ const CourseTable = () => {
     } else {
       const updatedData = { ...editingRow, [key]: e.target.value };
       setEditingRow(updatedData);
-      // setEditedCourseData(updatedData);
     }
   };
 
   const renderRow = (course, index) => {
-    // const isEditing = index === editingRow;
     const editingRowClass = "bg-gray-300";
-    // console.log("Editing row: ", editingRow);
-    // console.log("Course: ", course);
     const courseContent = Object.keys(course);
     return (
       <tr
@@ -122,7 +149,6 @@ const CourseTable = () => {
               <input
                 type="text"
                 value={editingRow[key] ?? course[key]}
-                // value={editedCourseData[key] ?? course[key]}
                 onChange={(e) => handleInputChange(e, key)}
               />
             ) : (
@@ -219,23 +245,7 @@ const CourseTable = () => {
   };
 
   const handleDownload = () => {
-    // Assuming filteredCourses is an array of objects representing rows with columns
-
-    // Function to remove first and last keys/columns from an object
-    const removeFirstLastColumns = (obj) => {
-      const keys = Object.keys(obj);
-      const modifiedObj = {};
-      for (let i = 1; i < keys.length - 1; i++) {
-        modifiedObj[keys[i]] = obj[keys[i]];
-      }
-      return modifiedObj;
-    };
-
-    // Remove first and last columns from each row in filteredCourses
-    const modifiedCourses = filteredCourses.map((course) =>
-      removeFirstLastColumns(course)
-    );
-
+    const modifiedCourses = filteredCourses.map(({ _id, ...rest }) => rest);
     const ws = XLSX.utils.json_to_sheet(modifiedCourses);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Courses");
@@ -248,7 +258,6 @@ const CourseTable = () => {
   });
 
   const handleSort = (key) => {
-    // Toggle the sorting direction if the same key is clicked again
     const direction =
       key === sortConfig.key && sortConfig.direction === "ascending"
         ? "descending"
@@ -287,6 +296,12 @@ const CourseTable = () => {
           </div>
         </form>
         <button
+          onClick={handleAddCourse}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-bold mr-2"
+        >
+          Add Course
+        </button>
+        <button
           className="bg-[#3dafaa] text-white px-4 py-2 rounded cursor-pointer font-bold mr-6"
           onClick={handleDownload}
         >
@@ -297,9 +312,7 @@ const CourseTable = () => {
         <table className="w-full border-collapse border">
           <thead className="sticky top-0">{renderHeaderRow()}</thead>
           <tbody>
-            {filteredCourses
-              .slice(0)
-              .map((course, index) => renderRow(course, index))}
+            {filteredCourses.map((course, index) => renderRow(course, index))}
           </tbody>
         </table>
       </div>

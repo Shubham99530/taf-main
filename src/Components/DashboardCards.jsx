@@ -40,7 +40,7 @@ const DashboardCardList = () => {
   const departmentList = Object.keys(initialDepartmentData);
 
   return (
-    <div className="grid lg:grid-cols-3 md:grid-cols-1 my-4 p-8 gap-6 max-h-[80vh] overflow-auto">
+    <div className="grid lg:grid-cols-3 md:grid-cols-1 my-4 p-8 gap-6 max-h-[80vh] overflow-auto" >
       {departmentList.map((department, index) => (
         <div
           key={index}

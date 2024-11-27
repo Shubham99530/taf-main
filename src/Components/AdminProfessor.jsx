@@ -1,13 +1,45 @@
 import React, { useContext, useState } from "react";
 import { AiOutlineSearch } from "react-icons/ai";
 import Swal from "sweetalert2";
-import ProfContext from "../context/ProfContext"; // Assuming you have a ProfContext
+import ProfContext from "../context/ProfContext";
 
 const AdminProfessor = () => {
-  const { professors, updateProfessor, deleteProfessor } =
+  const { professors, updateProfessor, deleteProfessor, addProfessor } =
     useContext(ProfContext);
   const [editingRow, setEditingRow] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const handleAddProfessor = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: "Add Professor",
+      html:
+        '<input id="name" class="swal2-input" placeholder="Name">' +
+        '<input id="emailId" class="swal2-input" placeholder="Email ID">',
+      focusConfirm: false,
+      preConfirm: () => {
+        const name = document.getElementById("name").value;
+        const emailId = document.getElementById("emailId").value;
+        if (!name || !emailId) {
+          Swal.showValidationMessage(`Please fill out all fields`);
+          return null;
+        }
+        return { name, emailId };
+      },
+    });
+
+    if (formValues) {
+      try {
+        const res = await addProfessor(formValues);
+        if (res.status === "Success") {
+          Swal.fire("Success", "Professor added successfully!", "success");
+        } else {
+          Swal.fire("Error", res.message, "error");
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to add professor", "error");
+      }
+    }
+  };
 
   const handleEdit = (row) => {
     setEditingRow(row);
@@ -16,7 +48,7 @@ const AdminProfessor = () => {
   const handleSave = async (row) => {
     const res = await updateProfessor(row._id, row);
     if (res.status === "Success") {
-      Swal.fire("Updated!", "Professor has been Updated", "success");
+      Swal.fire("Updated!", "Professor has been updated", "success");
     } else {
       Swal.fire("Oops!", res.message, "error");
     }
@@ -129,17 +161,13 @@ const AdminProfessor = () => {
         </tr>
       );
     } else {
-      const professorKeys = Object.keys(professors[0]);
-
       return (
-        <>
-          <tr className="bg-[#3dafaa] text-white">
-            <th className="border p-2 text-center">S.No</th>
-            <th className="border p-2 text-center">Email ID</th>
-            <th className="border p-2 text-center">Name</th>
-            <th className="border p-2 text-center">Action</th>
-          </tr>
-        </>
+        <tr className="bg-[#3dafaa] text-white">
+          <th className="border p-2 text-center">S.No</th>
+          <th className="border p-2 text-center">Email ID</th>
+          <th className="border p-2 text-center">Name</th>
+          <th className="border p-2 text-center">Action</th>
+        </tr>
       );
     }
   };
@@ -166,7 +194,12 @@ const AdminProfessor = () => {
             </button>
           </div>
         </form>
-        {/* Add any additional buttons or actions specific to professors */}
+        <button
+          onClick={handleAddProfessor}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Add Professor
+        </button>
       </div>
       <div className="overflow-auto max-w-[80vw] max-h-[82vh] mt-2">
         <table className="w-full border-collapse border">

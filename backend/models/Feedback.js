@@ -24,33 +24,33 @@ const feedbackSchema = new mongoose.Schema({
     },
     regularityInMeeting: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     attendanceInLectures: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     preparednessForTutorials: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     timelinessOfTasks: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     qualityOfWork: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     attitudeCommitment: {
         type: String,
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average'],
-        default: 'Average'
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average','NA'],
+        default: 'NA'
     },
     nominatedForBestTA: {
         type: Boolean,

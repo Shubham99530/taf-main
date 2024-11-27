@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig( {
   plugins: [ react() ],
   server: {
-    host: true
+    host: '0.0.0.0'
   },
   // define: {
   //   'import.meta.env.VITE_API_URL': JSON.stringify( 'http://localhost:5001' )
