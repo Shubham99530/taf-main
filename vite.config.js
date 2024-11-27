@@ -7,6 +7,7 @@ export default defineConfig( {
   server: {
     host: '0.0.0.0'
   },
+  base: './',
   // define: {
   //   'import.meta.env.VITE_API_URL': JSON.stringify( 'http://localhost:5001' )
   // }
