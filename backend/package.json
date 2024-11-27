@@ -10,7 +10,6 @@
     "start": "cross-env NODE_ENV=prod node index.js",
     "dev": "cross-env NODE_ENV=dev nodemon index.js",
     "mongosh": "mongosh \"mongodb+srv://atyantcluster.vxwfdgc.mongodb.net/\" --apiVersion 1 --username admin",
-    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "author": "Atyant Sony",
