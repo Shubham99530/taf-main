@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "description": "Backend for TA Allocation Portal developed using MongoDB, NodeJS & Express",
   "main": "index.js",
+  "homepage" :"https://Shubham99530.github.io/taf-main",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "cross-env NODE_ENV=prod node index.js",
     "dev": "cross-env NODE_ENV=dev nodemon index.js",
-    "mongosh": "mongosh \"mongodb+srv://atyantcluster.vxwfdgc.mongodb.net/\" --apiVersion 1 --username admin"
+    "mongosh": "mongosh \"mongodb+srv://atyantcluster.vxwfdgc.mongodb.net/\" --apiVersion 1 --username admin",
+    "predeploy": "npm run dev",
+    "deploy": "gh-pages -d build"
   },
   "author": "Atyant Sony",
   "license": "MIT",
