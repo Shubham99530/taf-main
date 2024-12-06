@@ -38,12 +38,12 @@ const startFeedback = asyncHandler(async (req, res) => {
                             student: ta._id,
                             professor: professor._id,
                             overallGrade: 'S',
-                            regularityInMeeting: 'Average',
-                            attendanceInLectures: 'Average',
-                            preparednessForTutorials: 'Average',
-                            timelinessOfTasks: 'Average',
-                            qualityOfWork: 'Average',
-                            attitudeCommitment: 'Average',
+                            regularityInMeeting: 'Excellent',
+                            attendanceInLectures: 'Excellent',
+                            preparednessForTutorials: 'Excellent',
+                            timelinessOfTasks: 'Excellent',
+                            qualityOfWork: 'Excellent',
+                            attitudeCommitment: 'Excellent',
                             nominatedForBestTA: false,
                             comments: '',
                         });
@@ -142,12 +142,12 @@ const getFeedbacksByProfessorId = asyncHandler(async (req, res) => {
                         course: { name: course.name },
                         student: { rollNo: ta.rollNo, name: ta.name },
                         overallGrade: "S",
-                        regularityInMeeting: "Average",
-                        attendanceInLectures: "Average",
-                        preparednessForTutorials: "Average",
-                        timelinessOfTasks: "Average",
-                        qualityOfWork: "Average",
-                        attitudeCommitment: "Average",
+                        regularityInMeeting: "Excellent",
+                        attendanceInLectures: "Excellent",
+                        preparednessForTutorials: "Excellent",
+                        timelinessOfTasks: "Excellent",
+                        qualityOfWork: "Excellent",
+                        attitudeCommitment: "Excellent",
                         nominatedForBestTA: false,
                         comments: "",
                     };
@@ -175,26 +175,26 @@ const downloadFeedbacks = asyncHandler(async (req, res) => {
             .populate('course', 'name code')
             .populate('student', 'name rollNo')
             .populate('professor', 'name emailId');
+        // Downloding only edited feedbacks
+        // const meaningfulFeedbacks = feedbacks.filter((feedback) => {
+        //     return (
+        //         feedback.overallGrade !== 'S' ||
+        //         feedback.regularityInMeeting !== 'Excellent' ||
+        //         feedback.attendanceInLectures !== 'Excellent' ||
+        //         feedback.preparednessForTutorials !== 'Excellent' ||
+        //         feedback.timelinessOfTasks !== 'Excellent' ||
+        //         feedback.qualityOfWork !== 'Excellent' ||
+        //         feedback.attitudeCommitment !== 'Excellent' ||
+        //         feedback.nominatedForBestTA !== false ||
+        //         (feedback.comments && feedback.comments.trim() !== '')
+        //     );
+        // });
 
-        const meaningfulFeedbacks = feedbacks.filter((feedback) => {
-            return (
-                feedback.overallGrade !== 'S' ||
-                feedback.regularityInMeeting !== 'Average' ||
-                feedback.attendanceInLectures !== 'Average' ||
-                feedback.preparednessForTutorials !== 'Average' ||
-                feedback.timelinessOfTasks !== 'Average' ||
-                feedback.qualityOfWork !== 'Average' ||
-                feedback.attitudeCommitment !== 'Average' ||
-                feedback.nominatedForBestTA !== false ||
-                (feedback.comments && feedback.comments.trim() !== '')
-            );
-        });
+        // if (meaningfulFeedbacks.length === 0) {
+        //     return res.status(404).json({ message: "No submitted feedbacks available for download." });
+        // }
 
-        if (meaningfulFeedbacks.length === 0) {
-            return res.status(404).json({ message: "No submitted feedbacks available for download." });
-        }
-
-        const formattedData = meaningfulFeedbacks.map((feedback) => ({
+        const formattedData = feedbacks.map((feedback) => ({
             "Professor Name": feedback.professor?.name || "N/A",
             "Professor Email": feedback.professor?.emailId || "N/A",
             "Student Roll No.": feedback.student?.rollNo || "N/A",

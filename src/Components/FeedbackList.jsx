@@ -18,32 +18,34 @@ const FeedbackList = () => {
   const fetchFeedbacks = async () => {
     try {
       let response;
-
-      if (user?.role === 'professor') {
+  
+      if (user && user.role === 'professor') {
+        // Fetch feedbacks related to the professor's courses
         response = await axios.get(`${API}/api/feedback/professor/${user.id}`);
-        setFeedbacks(response.data.feedbacks || []);
-      } else if (user?.role === 'admin') {
+        const assignedFeedbacks = response?.data.feedbacks || [];
+  
+        // Filter duplicate entries for the same student
+        const uniqueFeedbacks = assignedFeedbacks.reduce((acc, feedback) => {
+          if (!acc.find(f => f.student._id === feedback.student._id)) {
+            acc.push(feedback);
+          }
+          return acc;
+        }, []);
+        setFeedbacks(uniqueFeedbacks);
+      } else if (user && user.role === 'admin') {
+        // Fetch all feedbacks for the admin
         response = await axios.get(`${API}/api/feedback/all`);
-        const submittedFeedbacks = response.data.feedbacks.filter((feedback) => {
-          return (
-            feedback.overallGrade !== 'S' ||
-            feedback.regularityInMeeting !== 'Average' ||
-            feedback.attendanceInLectures !== 'Average' ||
-            feedback.preparednessForTutorials !== 'Average' ||
-            feedback.timelinessOfTasks !== 'Average' ||
-            feedback.qualityOfWork !== 'Average' ||
-            feedback.attitudeCommitment !== 'Average' ||
-            (feedback.comments && feedback.comments.trim() !== '')
-          );
-        });
-        setFeedbacks(submittedFeedbacks);
+        const allFeedbacks = response?.data.feedbacks || [];
+        setFeedbacks(allFeedbacks); // No filtering applied
       }
+  
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching feedbacks:', error);
+      console.error("Error fetching feedbacks:", error);
       setLoading(false);
     }
   };
+  
 
   const handleEditClick = (feedback) => {
     setEditedFeedback(feedback);
@@ -117,10 +119,10 @@ const FeedbackList = () => {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-auto max-w-screen-lg max-h-screen">
-          <table className="w-full table-auto border-collapse border">
+        <div className="overflow-auto max-w-[80vw] max-h-[60vh]">
+          <table className="table-auto border-collapse border ">
             <thead>
-              <tr className="bg-gray-200">
+              <tr className="bg-gray-200 sticky top-0 w-full">
                 <th className="border p-2">Professor</th>
                 <th className="border p-2">Student Roll No.</th>
                 <th className="border p-2">Student Name</th>
@@ -133,7 +135,7 @@ const FeedbackList = () => {
                 <th className="border p-2">Quality of Work</th>
                 <th className="border p-2">Attitude/Commitment</th>
                 <th className="border p-2">Nominated for Best TA</th>
-                <th className="border p-2">Comments</th>
+                <th className="border px-20 w-60">Comments</th>
                 {user?.role === 'professor' && <th className="border p-2">Actions</th>}
               </tr>
             </thead>
@@ -168,6 +170,7 @@ const FeedbackList = () => {
                           value={editedFeedback.regularityInMeeting || ''}
                           onChange={(e) => handleChange(e, 'regularityInMeeting')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -184,6 +187,7 @@ const FeedbackList = () => {
                           value={editedFeedback.attendanceInLectures || ''}
                           onChange={(e) => handleChange(e, 'attendanceInLectures')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -200,6 +204,7 @@ const FeedbackList = () => {
                           value={editedFeedback.preparednessForTutorials || ''}
                           onChange={(e) => handleChange(e, 'preparednessForTutorials')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -216,6 +221,7 @@ const FeedbackList = () => {
                           value={editedFeedback.timelinessOfTasks || ''}
                           onChange={(e) => handleChange(e, 'timelinessOfTasks')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -232,6 +238,7 @@ const FeedbackList = () => {
                           value={editedFeedback.qualityOfWork || ''}
                           onChange={(e) => handleChange(e, 'qualityOfWork')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -248,6 +255,7 @@ const FeedbackList = () => {
                           value={editedFeedback.attitudeCommitment || ''}
                           onChange={(e) => handleChange(e, 'attitudeCommitment')}
                         >
+                          <option value="NA">NA</option>
                           <option value="Average">Average</option>
                           <option value="Excellent">Excellent</option>
                           <option value="Very Good">Very Good</option>
@@ -271,7 +279,7 @@ const FeedbackList = () => {
                         feedback.nominatedForBestTA ? 'Yes' : 'No'
                       )}
                     </td>
-                    <td className="border p-2">
+                    <td className="border p-2 w-1000">
                       {editableFeedbackId === feedback._id ? (
                         <input
                           type="text"
