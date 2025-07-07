@@ -454,5 +454,3 @@ Report issues via [GitHub Issues](https://github.com/Sambhav-Gautam/Ta-Allocatio
 - **Issues**: [GitHub Issues](https://github.com/Sambhav-Gautam/Ta-Allocation-Portal/issues)
 
 ---
-
-*Built with ❤️ for academic excellence at IIITD*
