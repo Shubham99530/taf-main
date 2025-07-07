@@ -6,7 +6,8 @@ const DepartmentSideBar = () => {
 
     const handleLogout = () => {
         localStorage.removeItem("token");
-        window.location.replace(API);
+        // window.location.replace(API);
+        window.location.replace(window.location.origin);
     };
     return (
         <div className="bg-[#3dafaa] h-screen text-center max-w-[95%] mt-4">

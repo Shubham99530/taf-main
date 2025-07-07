@@ -88,22 +88,37 @@ const StudentForm = () => {
   const [selectedDepartment, setSelectedDepartment] = useState(
     formData.department
   );
+  const [commitmentChecked, setCommitmentChecked] = React.useState(false);
+  const [trainingChecked, setTrainingChecked] = React.useState(false);
   const [dataCorrect, setDataCorrect] = useState(false);
+  const [allocationAcknowledged, setAllocationAcknowledged] = useState(false);
+  const handleAllocationAcknowledgedChange = (e) => {
+  setAllocationAcknowledged(e.target.checked);
+};
+
+  // Corresponding handlers
+  const handleCommitmentChange = (e) => {
+    setCommitmentChecked(e.target.checked);
+  };
+
+  const handleTrainingChange = (e) => {
+    setTrainingChecked(e.target.checked);
+  };
   const handleDataCorrectChange = () => {
     setDataCorrect(!dataCorrect);
   };
 
   const isAnyFieldEmpty = () => {
+    // Verify that all keys in formData are non-empty
     for (const key in formData) {
-      if (
-        formData[key] &&
-        (formData[key] === "" || formData[key].length === 0)
-      ) {
+      if (formData[key] === "" || (Array.isArray(formData[key]) && formData[key].length === 0)) {
         return true;
       }
     }
-    return !dataCorrect;
+    // Verify that all checkboxes are checked
+    return !(commitmentChecked && trainingChecked && dataCorrect && allocationAcknowledged);
   };
+  
 
   useEffect(() => {
     axios
@@ -223,6 +238,11 @@ const StudentForm = () => {
           return;
         }
       }
+      if (!allocationAcknowledged) {
+        alert("Please acknowledge the allocation disclaimer.");
+        return;
+      }
+      
 
       for (const pref of formData.nonPreferences) {
         if (pref === "") {
@@ -276,6 +296,9 @@ const StudentForm = () => {
     }
   };
 
+  const labelStyle = "block text-xl font-extrabold tracking-wide text-[#3dafaa] py-4 z-30";
+  const subLabelStyle = "block text-sm font-bold text-gray-700 mb-2 tracking-wide";
+
   const handleDepartmentChange = (event) => {
     const { value } = event.target;
     setSelectedDepartment(value);
@@ -301,20 +324,89 @@ const StudentForm = () => {
             alt="Sample image"
           />
           <div className=" mx-auto z-10 bg-white px-4 pb-4 border-4 mt-4 border-[#3dafaa] shadow-xl max-h-[97vh] overflow-auto">
-            <div className="z-30 flex justify-center sticky top-0 bg-white">
-              <h2 className="text-3xl font-bold mb-2  text-[#3dafaa]">
-                TA Form
-              </h2>
-            </div>
-            <h2 className="text-2xl font-bold mb-2 mt-4">
-              Student Information
+          <div className="z-30 flex justify-center sticky top-0 bg-white shadow-md border-b border-[#3dafaa] py-4 w-full">
+            <h2 className="text-3xl font-extrabold tracking-wide text-[#3dafaa] w-full text-center">
+              TA Form
             </h2>
+          </div>
+
             <form onSubmit={handleSubmit}>
+            <div className="mb-6 p-4 border-l-4 border-[#3dafaa] bg-[#f0fafa] rounded-lg shadow-sm">
+              {/* Allocation Disclaimer */}
+            <div className="mb-0 mt-4">
+              <label className="inline-flex items-start">
+                <input
+                  type="checkbox"
+                  className="form-checkbox mt-1 h-5 w-5 text-[#3dafaa]"
+                  checked={allocationAcknowledged}
+                  onChange={handleAllocationAcknowledgedChange}
+                />
+                <span className="ml-2">
+                  <span className="text-red-600 font-bold">Allocation Disclaimer: </span>
+                  I understand that TA allocation will be done <span className="text-[#3dafaa] font-bold underline">based on course requirements</span> and not solely on my preferences. Filling preferences does not guarantee allocation to the desired courses.
+                </span>
+              </label>
+            </div>
+
+              {/* Commitment Checkbox */}
+              <div className="mb-4">
+                <label className="inline-flex items-start">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox mt-1 h-5 w-5 text-[#3dafaa]"
+                    checked={commitmentChecked}
+                    onChange={handleCommitmentChange}
+                  />
+                  <span className="ml-2">
+                    <span className="text-red-600 font-bold">TA Commitment: </span>
+                    I understand that once I enroll in the TA allocation process, I am committed to fulfilling my TA duties and
+                    <span className="text-[#3dafaa] font-bold underline"> will not be able to opt out afterwards.</span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Training Acknowledgment */}
+              <div className="mb-4">
+                <label className="inline-flex items-start">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox mt-1 h-5 w-5 text-[#3dafaa]"
+                    checked={trainingChecked}
+                    onChange={handleTrainingChange}
+                  />
+                  <span className="ml-2">
+                    <span className="text-red-600 font-bold">Training Acknowledgment: </span>
+                    I acknowledge that I must complete the requisite TA training prior to commencing my TA responsibilities.
+                  </span>
+                </label>
+              </div>
+
+              {/* Data Accuracy Confirmation */}
+              <div className="mb-0">
+                <label className="inline-flex items-start">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox mt-1 h-5 w-5 text-[#3dafaa]"
+                    checked={dataCorrect}
+                    onChange={handleDataCorrectChange}
+                  />
+                  <span className="ml-2">
+                    <span className="text-red-600 font-bold">Data Accuracy Confirmation: </span>
+                    I hereby confirm that all the data I have provided is accurate to the best of my knowledge.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <h2 className="z-30 text-xl font-extrabold tracking-wide text-[#3dafaa] py-4">
+              Student Data
+            </h2>
+
               {/* Email Id */}
               <div className="mb-4">
                 <label
                   htmlFor="emailId"
-                  className="block text-gray-700 font-bold"
+                  className={subLabelStyle}
                 >
                   Email Id:
                 </label>
@@ -324,14 +416,14 @@ const StudentForm = () => {
                   name="emailId"
                   value={email}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  disabled // Make the input disabled
+                  disabled
+                  className="w-full p-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {/* Name */}
               <div className="mb-4">
-                <label htmlFor="name" className="block text-gray-700 font-bold">
+                <label htmlFor="name" className={subLabelStyle}>
                   Name:
                 </label>
                 <input
@@ -340,6 +432,7 @@ const StudentForm = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
+                  placeholder="Enter your full name"
                   className="w-full p-2 border rounded"
                 />
               </div>
@@ -348,7 +441,7 @@ const StudentForm = () => {
               <div className="mb-4">
                 <label
                   htmlFor="rollNo"
-                  className="block text-gray-700 font-bold"
+                  className={subLabelStyle}
                 >
                   Roll No:
                 </label>
@@ -366,7 +459,7 @@ const StudentForm = () => {
               <div className="mb-4">
                 <label
                   htmlFor="program"
-                  className="block text-gray-700 font-bold"
+                  className={subLabelStyle}
                 >
                   Program:
                 </label>
@@ -402,7 +495,7 @@ const StudentForm = () => {
               <div className="mb-4">
                 <label
                   htmlFor="department"
-                  className="block text-gray-700 font-bold"
+                  className={subLabelStyle}
                 >
                   Department:
                 </label>
@@ -445,7 +538,7 @@ const StudentForm = () => {
               <div className="mb-4">
                 <label
                   htmlFor="taType"
-                  className="block text-gray-700 font-bold"
+                  className={subLabelStyle}
                 >
                   TA Type:
                 </label>
@@ -483,7 +576,7 @@ const StudentForm = () => {
 
               {/* CGPA */}
               <div className="mb-4">
-                <label htmlFor="cgpa" className="block text-gray-700 font-bold">
+                <label htmlFor="cgpa" className={subLabelStyle}>
                   CGPA: 
                   
                 </label>
@@ -529,7 +622,7 @@ const StudentForm = () => {
 
               {/* Department Preferences */}
               <div className="mb-4">
-                <h3 className="text-xl font-bold mb-2">
+                <h3 className={labelStyle}>
                   Department Preferences
                 </h3>
                 {formData.departmentPreferences.map((pref, index) => (
@@ -662,7 +755,7 @@ const StudentForm = () => {
 
               {/* Non-Department Preferences */}
               <div className="mb-4">
-                <h3 className="text-xl font-bold mb-2">Other Preferences</h3>
+                <h3 className={labelStyle}>Other Preferences</h3>
                 {formData.nonDepartmentPreferences.map((pref, index) => (
                   <div key={index} className="mb-4">
                     <label
@@ -792,7 +885,7 @@ const StudentForm = () => {
               </div>
 
               <div>
-                <h3 className="text-xl font-bold mb-2">Non-Preferences</h3>
+                <h3 className={labelStyle}>Non-Preferences</h3>
                 {formData.nonPreferences.map((pref, index) => (
                   <div key={index}>
                     <Select
@@ -872,38 +965,20 @@ const StudentForm = () => {
                   </div>
                 ))}
               </div>
-              <div className="mb-4">
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox h-5 w-5 text-[#3dafaa]"
-                    checked={dataCorrect}
-                    onChange={handleDataCorrectChange}
-                  />
-                  <span className="ml-2 text-gray-700">
-                    I am committed to fulfilling my TA duties once assigned and
-                    will not opt out thereafter. <br />
-                    Prior to commencing my TA responsibilities, I will ensure to
-                    complete the requisite TA training. <br />I hereby confirm
-                    the accuracy of the provided data to the best of my
-                    knowledge.
-                  </span>
-                </label>
-              </div>
-
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className={`p-2 rounded ${
+                  className={`relative px-6 py-2 rounded-xl font-semibold transition-all duration-300 ease-in-out shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     isAnyFieldEmpty()
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : "bg-[#3dafaa] text-white"
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+                      : "bg-[#3dafaa] text-white hover:bg-[#34a29e] hover:shadow-lg active:scale-95 focus:ring-[#3dafaa]"
                   }`}
                   disabled={isAnyFieldEmpty()}
                 >
-                  Submit
+                  {isAnyFieldEmpty() ? "Complete All Fields" : "Submit"}
                 </button>
               </div>
+
             </form>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   AiOutlineSearch,
   AiOutlineSortAscending,
@@ -8,16 +8,18 @@ import ClipLoader from "react-spinners/ClipLoader";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 import StudentContext from "../context/StudentContext";
-// import StudentState from "../context/StudentState";
 
 const Tablestudents = () => {
-  const { students, updateStudent, deleteStudent,setStudents} = useContext(StudentContext);
-  // const { setStudents} = useContext(StudentState);
+  const { students, updateStudent, deleteStudent, setStudents } = useContext(StudentContext);
   const [editingRow, setEditingRow] = useState(-1);
   const [editingStudentIndex, setEditingStudentIndex] = useState();
   const [editedStudentData, setEditedStudentData] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [loader, setLoader] = useState(false);
+  const [expandedRowIndex, setExpandedRowIndex] = useState(-1);
+  const [visibleRowCount, setVisibleRowCount] = useState(20);
+  const containerRef = useRef();
+
   const customLabels = [
     "Name",
     "Email Id",
@@ -26,8 +28,6 @@ const Tablestudents = () => {
     "Program",
     "Department",
     "TA Type",
-    /* 'TA Status',
-    'TA Allotted', */
     "Dept Pref 1",
     "Grade Dept Pref 1",
     "Dept Pref 2",
@@ -46,6 +46,10 @@ const Tablestudents = () => {
     "Non-Prefs 2",
     "Non-Prefs 3",
   ];
+
+  // Display first 7 columns in summary view
+  const summaryHeaders = customLabels.slice(0, 7);
+
   const studentKeyMapping = {
     "Name": "name",
     "Email Id": "email",
@@ -72,6 +76,7 @@ const Tablestudents = () => {
     "Non-Prefs 2": "nonPrefs2",
     "Non-Prefs 3": "nonPrefs3",
   };
+
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "ascending",
@@ -86,9 +91,7 @@ const Tablestudents = () => {
     setEditingRow(rowIndex);
     let count = 0;
     for (const s of students) {
-      if (s._id === ID) {
-        break;
-      }
+      if (s._id === ID) break;
       count++;
     }
     setEditingStudentIndex(count);
@@ -100,53 +103,41 @@ const Tablestudents = () => {
     const originalStudentData = students[editingStudentIndex];
     const updatedData = {};
     const hasChanges = Object.keys(editedStudentData).some(
-      key => editedStudentData[key] !== students[editingStudentIndex][key]
+      key => editedStudentData[key] !== originalStudentData[key]
     );
 
     if (!hasChanges) {
-      handleCancel(); // Exit editing mode if no changes
-      setLoader(false); // Ensure loader is turned off here
+      handleCancel();
+      setLoader(false);
       return;
     }
 
-  
-    // Construct the updatedData object with only changed fields
     for (const key in editedStudentData) {
-        if (editedStudentData[key] !== originalStudentData[key]) {
-            updatedData[key] = editedStudentData[key]; // Maintain original key case
-        }
+      if (editedStudentData[key] !== originalStudentData[key]) {
+        updatedData[key] = editedStudentData[key];
+      }
     }
-
-    console.log("Updated Data being sent to backend:", updatedData); // Log to ensure correct data is sent
 
     try {
-        const res = await updateStudent(ID, updatedData); // Call the updateStudent function
-
-        console.log("Response from server:", res); // Log the response for debugging
-
-        setLoader(false); // Turn off the loader
-
-        if (res.status === "Success") {
-            Swal.fire("Updated!", "Student has been updated", "success");
-            window.location.reload();
-            
-        } else {
-            Swal.fire("Oops!", res.message, "error"); // Show error message
-        }
-        handleCancel();
+      const res = await updateStudent(ID, updatedData);
+      setLoader(false);
+      if (res.status === "Success") {
+        Swal.fire("Updated!", "Student has been updated", "success");
+        window.location.reload();
+      } else {
+        Swal.fire("Oops!", res.message, "error");
+      }
+      handleCancel();
     } catch (error) {
-        console.error("Error during save operation:", error);
-        Swal.fire("Error", "Failed to update student. Please try again.", "error");
-        setLoader(false); // Ensure loader is turned off
+      Swal.fire("Error", "Failed to update student. Please try again.", "error");
+      setLoader(false);
     }
-    
-};
+  };
 
-const handleCancel = () => {
+  const handleCancel = () => {
     setEditingRow(-1);
     setEditedStudentData({});
-};
-
+  };
 
   const handleDelete = async (studentId) => {
     Swal.fire({
@@ -172,7 +163,6 @@ const handleCancel = () => {
   const handleInputChange = (e, label) => {
     const value = e.target.value;
     const studentKey = studentKeyMapping[label];
-  
     setEditedStudentData((prevData) => ({
       ...prevData,
       [studentKey]: value,
@@ -183,55 +173,46 @@ const handleCancel = () => {
     if (students[editingStudentIndex]) {
       setEditedStudentData({ ...students[editingStudentIndex] });
     } else {
-      console.warn('Invalid editingStudentIndex:', editingStudentIndex);
+      console.warn("Invalid editingStudentIndex:", editingStudentIndex);
     }
   }, [editingStudentIndex, students]);
 
-  useEffect(() => {
-    setSortedStudent(extractedData);
-  }, [students]);
-
   const extractedData = students.map((student) => {
     const formattedData = customLabels.map((label) => {
-      if (label === "Name") {
-        return student.name;
-      } else if (label === "Email Id") {
-        return student.emailId;
-      } else if (label === "Roll No") {
-        return student.rollNo;
-      } else if (label === "CGPA") {
-        return student.cgpa;
-      } else if (label === "Program") {
-        return student.program;
-      } else if (label === "Department") {
-        return student.department;
-      } else if (label === "TA Type") {
-        return student.taType;
-      } else if (label === "TA Status") {
-        return student.allocationStatus;
-      } else if (label === "TA Allotted") {
-        return student.allocatedTA;
-      } else if (label.startsWith("Dept Pref ")) {
+      if (label === "Name") return student.name;
+      if (label === "Email Id") return student.emailId;
+      if (label === "Roll No") return student.rollNo;
+      if (label === "CGPA") return student.cgpa;
+      if (label === "Program") return student.program;
+      if (label === "Department") return student.department;
+      if (label === "TA Type") return student.taType;
+      if (label === "TA Status") return student.allocationStatus;
+      if (label === "TA Allotted") return student.allocatedTA;
+      if (label.startsWith("Dept Pref ")) {
         const index = parseInt(label.replace("Dept Pref ", ""), 10) - 1;
         return index < student.departmentPreferences.length
           ? student.departmentPreferences[index].course
           : "";
-      } else if (label.startsWith("Grade Dept Pref")) {
+      }
+      if (label.startsWith("Grade Dept Pref")) {
         const index = parseInt(label.replace("Grade Dept Pref ", ""), 10) - 1;
         return index < student.departmentPreferences.length
           ? student.departmentPreferences[index].grade
           : "";
-      } else if (label.startsWith("Other Pref ")) {
+      }
+      if (label.startsWith("Other Pref ")) {
         const index = parseInt(label.replace("Other Pref ", ""), 10) - 1;
         return index < student.nonDepartmentPreferences.length
           ? student.nonDepartmentPreferences[index].course
           : "";
-      } else if (label.startsWith("Grade Other Pref")) {
+      }
+      if (label.startsWith("Grade Other Pref")) {
         const index = parseInt(label.replace("Grade Other Pref ", ""), 10) - 1;
         return index < student.nonDepartmentPreferences.length
           ? student.nonDepartmentPreferences[index].grade
           : "";
-      } else if (label.startsWith("Non-Prefs ")) {
+      }
+      if (label.startsWith("Non-Prefs ")) {
         const index = parseInt(label.replace("Non-Prefs ", ""), 10) - 1;
         return index < student.nonPreferences.length
           ? student.nonPreferences[index]
@@ -243,20 +224,53 @@ const handleCancel = () => {
     return formattedData;
   });
 
+  useEffect(() => {
+    setSortedStudent(extractedData);
+    setVisibleRowCount(20);
+  }, [students]);
+
   const filteredStudents =
     searchQuery === ""
       ? sortedStudent
       : sortedStudent.filter((student) => {
-          const values = Object.values(student).join(" ").toLowerCase();
+          const values = student.join(" ").toLowerCase();
           return values.includes(searchQuery.toLowerCase());
         });
+
+  const handleSort = (key) => {
+    const direction =
+      key === sortConfig.key && sortConfig.direction === "ascending"
+        ? "descending"
+        : "ascending";
+    const sorted = [...sortedStudent].sort((a, b) => {
+      const valueA = a[key].toString().toLowerCase();
+      const valueB = b[key].toString().toLowerCase();
+      if (valueA < valueB) return direction === "ascending" ? -1 : 1;
+      if (valueA > valueB) return direction === "ascending" ? 1 : -1;
+      return 0;
+    });
+    setSortConfig({ key, direction });
+    setSortedStudent(sorted);
+  };
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      setVisibleRowCount((prev) => Math.min(filteredStudents.length, prev + 10));
+    }
+  };
 
   const renderHeaderRow = () => {
     return (
       <tr className="bg-[#3dafaa] text-white">
-        <th className="border p-2 text-center">S.No</th>
-        {customLabels.map((label, index) => (
-          <th className="border p-2 text-center" key={index}>
+        <th className="border-b py-3 px-4 text-center font-semibold break-words">
+          S.No
+        </th>
+        {summaryHeaders.map((label, index) => (
+          <th
+            key={index}
+            className="border-b py-3 px-4 text-center font-semibold break-words"
+          >
             <button
               className="w-full flex justify-center"
               onClick={() => handleSort(index)}
@@ -271,144 +285,251 @@ const handleCancel = () => {
             </button>
           </th>
         ))}
-        <th className="border p-2 text-center">Actions</th>
+        <th className="border-b py-3 px-4 text-center font-semibold break-words">
+          Actions
+        </th>
       </tr>
     );
   };
 
-  const renderRow = (data, index) => {
+  const renderSummaryRow = (data, index) => {
     const isEditing = index === editingRow;
-    const editingRowClass = "bg-gray-300";
-
     return (
-      <tr
-        className={`text-center ${isEditing ? editingRowClass : ""}`}
-        key={index}
-      >
-        <td className="border p-2">{index + 1}</td>
-        {data.slice(0, 24).map((item, itemIndex) => (
-        <td className="border p-2" key={itemIndex}>
-          {isEditing ? (
-            <input
-              type="text"
-              value={
-                editedStudentData[studentKeyMapping[customLabels[itemIndex]]] !== undefined
-                  ? editedStudentData[studentKeyMapping[customLabels[itemIndex]]]
-                  : data[itemIndex] 
-              }
-              onChange={(e) => handleInputChange(e, customLabels[itemIndex])}
-            />
-          ) : (
-            item 
-          )}
-        </td>
-      ))}
-        <td className="border p-2">
-          {isEditing ? (
-            loader ? (
-              <div className="flex justify-center">
-                <ClipLoader
-                  color={"#3dafaa"}
-                  loading={loader}
-                  size={100}
-                  aria-label="Loading Spinner"
-                  data-testid="loader"
+      <React.Fragment key={`row-${index}`}>
+        <tr
+          className="text-center cursor-pointer"
+          onClick={() => {
+            if (!isEditing) {
+              setExpandedRowIndex(expandedRowIndex === index ? -1 : index);
+            }
+          }}
+        >
+          <td className="border-b py-2 px-3 break-words">{index + 1}</td>
+          {data.slice(0, 7).map((item, itemIndex) => (
+            <td key={itemIndex} className="border-b py-2 px-3 break-words">
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={
+                    editedStudentData[studentKeyMapping[customLabels[itemIndex]]] !== undefined
+                      ? editedStudentData[studentKeyMapping[customLabels[itemIndex]]]
+                      : item
+                  }
+                  onChange={(e) => handleInputChange(e, customLabels[itemIndex])}
+                  className="w-full rounded px-2 py-1 border text-sm"
                 />
-              </div>
+              ) : (
+                item
+              )}
+            </td>
+          ))}
+          <td
+            className="border-b py-2 px-3 break-words"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isEditing ? (
+              loader ? (
+                <div className="flex justify-center">
+                  <ClipLoader
+                    color={"#3dafaa"}
+                    loading={loader}
+                    size={30}
+                    aria-label="Loading Spinner"
+                  />
+                </div>
+              ) : (
+                <div className="flex">
+                  <button
+                    className="bg-green-500 text-white px-2 py-1 rounded-full flex items-center mr-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSave(data[24]);
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-2 py-1 rounded-full flex items-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancel();
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )
             ) : (
               <div className="flex">
                 <button
-                  className="bg-green-500 text-white px-2 py-1 rounded-md flex items-center mr-1"
-                  onClick={() => handleSave(data[24])}
+                  className="bg-blue-500 text-white px-2 py-1 rounded-full flex items-center mr-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(index, data[24]);
+                  }}
                 >
-                  Save
+                  Edit
                 </button>
                 <button
-                  className="bg-red-500 text-white px-2 py-1 rounded-md flex items-center"
-                  onClick={handleCancel}
+                  className="bg-red-500 text-white px-2 py-1 rounded-full flex items-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(data[24]);
+                  }}
                 >
-                  Cancel
+                  Delete
                 </button>
               </div>
-            )
-          ) : (
-            <div className="flex">
-              <button
-                className="bg-blue-500 text-white px-2 py-1 rounded-md flex items-center mr-1"
-                onClick={() => handleEdit(index, data[24])}
-              >
-                Edit
-              </button>
-              <button
-                className="bg-red-500 text-white px-2 py-1 rounded-md flex items-center"
-                onClick={() => handleDelete(data[24])}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </td>
-      </tr>
+            )}
+          </td>
+        </tr>
+        {expandedRowIndex === index && (
+          <tr key={`detail-${index}`}>
+            <td colSpan={summaryHeaders.length + 2}>
+              <div className="p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      title: "Department Preferences",
+                      items: [
+                        { label: "Dept Pref 1", index: 7 },
+                        { label: "Grade Dept Pref 1", index: 8 },
+                        { label: "Dept Pref 2", index: 9 },
+                        { label: "Grade Dept Pref 2", index: 10 },
+                      ],
+                    },
+                    {
+                      title: "Other Preferences",
+                      items: [
+                        { label: "Other Pref 1", index: 11 },
+                        { label: "Grade Other Pref 1", index: 12 },
+                        { label: "Other Pref 2", index: 13 },
+                        { label: "Grade Other Pref 2", index: 14 },
+                        { label: "Other Pref 3", index: 15 },
+                        { label: "Grade Other Pref 3", index: 16 },
+                        { label: "Other Pref 4", index: 17 },
+                        { label: "Grade Other Pref 4", index: 18 },
+                        { label: "Other Pref 5", index: 19 },
+                        { label: "Grade Other Pref 5", index: 20 },
+                      ],
+                    },
+                    {
+                      title: "Non Preferences",
+                      items: [
+                        { label: "Non-Prefs 1", index: 21 },
+                        { label: "Non-Prefs 2", index: 22 },
+                        { label: "Non-Prefs 3", index: 23 },
+                      ],
+                    },
+                  ].map((group, gIndex) => (
+                    <div
+                      key={gIndex}
+                      className="bg-gradient-to-br from-white to-gray-50 p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 text-sm border border-gray-200 hover:bg-gray-50 hover:border-[#3dafaa]"
+                    >
+                      <h3 className="text-base font-semibold mb-3 border-b pb-2 text-[#3dafaa] border-[#3dafaa]/50">
+                        {group.title}
+                      </h3>
+                      {(() => {
+                        // For Department & Other Preferences
+                        if (
+                          group.title === "Department Preferences" ||
+                          group.title === "Other Preferences"
+                        ) {
+                          const rowCount = group.items.length / 2;
+                          return (
+                            <>
+                              <div className="flex font-bold border-b pb-1">
+                                <div className="w-1/12 text-center px-2 whitespace-normal">
+                                  S.No
+                                </div>
+                                <div className="w-7/12 text-center px-2 whitespace-normal">
+                                  Course
+                                </div>
+                                <div className="w-4/12 text-center px-2 whitespace-normal">
+                                  Grade
+                                </div>
+                              </div>
+                              {Array.from({ length: rowCount }).map((_, i) => {
+                                const courseItem = group.items[i * 2];
+                                const gradeItem = group.items[i * 2 + 1];
+                                const courseName = data[courseItem.index];
+                                let grade = data[gradeItem.index];
+                                if (grade === "Course Not Done") {
+                                  grade = "N/A";
+                                }
+                                return (
+                                  <div
+                                    key={i}
+                                    className="flex border-b py-1"
+                                  >
+                                    <div className="w-1/12 text-center px-2 break-words">
+                                      {i + 1}.
+                                    </div>
+                                    <div className="w-7/12 text-center px-2 break-words">
+                                      {courseName}
+                                    </div>
+                                    <div className="w-4/12 text-center px-2 break-words">
+                                      {grade}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          );
+                        } else if (group.title === "Non Preferences") {
+                          return (
+                            <>
+                              <div className="flex font-bold border-b pb-1">
+                                <div className="w-1/12 text-center px-2 whitespace-normal">
+                                  S.No
+                                </div>
+                                <div className="w-7/12 text-center px-2 whitespace-normal">
+                                  Course
+                                </div>
+                                <div className="w-4/12 text-center px-2 whitespace-normal">
+                                  Grade
+                                </div>
+                              </div>
+                              {group.items.map((item, i) => {
+                                const courseName = data[item.index];
+                                return (
+                                  <div
+                                    key={i}
+                                    className="flex border-b py-1"
+                                  >
+                                    <div className="w-1/12 text-center px-2 break-words">
+                                      {i + 1}.
+                                    </div>
+                                    <div className="w-7/12 text-center px-2 break-words">
+                                      {courseName}
+                                    </div>
+                                    <div className="w-4/12 text-center px-2 break-words">
+                                      N/A
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          );
+                        }
+                      })()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </td>
+          </tr>
+        )}
+      </React.Fragment>
     );
   };
 
   const handleDownload = () => {
     const ws = XLSX.utils.json_to_sheet(filteredStudents);
-
-    // Set custom headers as the first row
-    const headers = [
-      "Name",
-      "Email Id",
-      "Roll No",
-      "CGPA",
-      "Program",
-      "Department",
-      "TA Type",
-      /*  'TA Status',
-    'TA Allotted', */
-      "Dept Pref 1",
-      "Grade Dept Pref 1",
-      "Dept Pref 2",
-      "Grade Dept Pref 2",
-      "Other Pref 1",
-      "Grade Other Pref 1",
-      "Other Pref 2",
-      "Grade Other Pref 2",
-      "Other Pref 3",
-      "Grade Other Pref 3",
-      "Other Pref 4",
-      "Grade Other Pref 4",
-      "Other Pref 5",
-      "Non-Prefs 1",
-      "Non-Prefs 2",
-      "Non-Prefs 3",
-    ]; // Replace with your custom headers
     XLSX.utils.sheet_add_aoa(ws, [customLabels], { origin: "A1" });
-
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Students");
     XLSX.writeFile(wb, "Students_Downloaded.xlsx");
-  };
-
-  const handleSort = (key) => {
-    // Toggle the sorting direction if the same key is clicked again
-    const direction =
-      key === sortConfig.key && sortConfig.direction === "ascending"
-        ? "descending"
-        : "ascending";
-    const sorted = [...sortedStudent].sort((a, b) => {
-      const valueA = a[key].toString().toLowerCase();
-      const valueB = b[key].toString().toLowerCase();
-      if (valueA < valueB) {
-        return direction === "ascending" ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return direction === "ascending" ? 1 : -1;
-      }
-      return 0;
-    });
-    setSortConfig({ key, direction });
-    setSortedStudent(sorted);
   };
 
   return (
@@ -423,25 +544,33 @@ const handleCancel = () => {
               onChange={handleSearch}
               className="w-full p-4 rounded-full h-10 border border-[#3dafaa] outline-none focus:border-[#3dafaa]"
             />
-            <button className="absolute right-0 top-1/2 -translate-y-1/2 p-3 bg-[#3dafaa] rounded-full search-button">
+            <button className="absolute right-0 top-1/2 -translate-y-1/2 p-3 bg-[#3dafaa] rounded-full">
               <AiOutlineSearch />
             </button>
           </div>
         </form>
         <button
-          className="bg-[#3dafaa] text-white px-4 py-2 rounded cursor-pointer font-bold mr-6"
+          className="bg-[#6495ED] hover:bg-[#3b6ea5] text-white px-2 py-1 rounded-full cursor-pointer font-bold text-sm"
           onClick={handleDownload}
         >
           Download
         </button>
       </div>
-      <div className="overflow-auto max-w-[80vw] max-h-[80vh] mt-4">
-        <table className="w-full border-collapse border">
-          <thead className="sticky top-0">{renderHeaderRow()}</thead>
-          <tbody>
-            {filteredStudents.map((data, index) => renderRow(data, index))}
-          </tbody>
-        </table>
+      <div
+        ref={containerRef}
+        className="overflow-auto w-full max-h-[80vh] mt-4"
+        onScroll={handleScroll}
+      >
+        <div className="shadow-2xl rounded-3xl overflow-hidden border">
+          <table className="w-full border-collapse border">
+            <thead className="sticky top-0">{renderHeaderRow()}</thead>
+            <tbody>
+              {filteredStudents.slice(0, visibleRowCount).map((data, index) =>
+                renderSummaryRow(data, index)
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

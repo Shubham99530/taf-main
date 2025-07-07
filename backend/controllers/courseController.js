@@ -104,6 +104,31 @@ const getCourses = asyncHandler(async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+// @desc Update totalStudents for courses based on course name and code
+// @route POST /api/course/updateTotalStudents
+// @access public
+const updateTotalStudents = asyncHandler(async (req, res) => {
+    const coursesToUpdate = req.body; // Expecting [{ code: 'CS101', name: 'Intro to CS', totalStudents: 100 }, ...]
+
+    try {
+        const bulkOps = coursesToUpdate.map((course) => ({
+            updateOne: {
+                filter: { code: course.code, name: course.name }, // Match both code and name
+                update: { $set: { totalStudents: course.totalStudents } },
+                upsert: false, // Don't insert new courses if not found
+            },
+        }));
+
+        if (bulkOps.length > 0) {
+            await Course.collection.bulkWrite(bulkOps, { ordered: false });
+        }
+
+        res.status(200).json({ message: 'Courses updated successfully' });
+    } catch (error) {
+        console.error('Error updating courses:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
 
 // @desc Add new course
 // @route POST /api/course
@@ -300,6 +325,7 @@ const ProfessorCourses = asyncHandler(async (req, res) => {
         updateCourse,
         deleteCourse,
         getCourses,
-        ProfessorCourses
+        ProfessorCourses,
+        updateTotalStudents,
     };
     

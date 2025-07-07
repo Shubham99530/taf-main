@@ -2,7 +2,8 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import DashboardCardList from "./DashboardCards"; // Import your DashboardCardList component
-import AdminManagement from './AdminManagement';
+import AdminManagement from "./AdminManagement";
+
 const Dashboard = () => {
   const [currentRound, setCurrentRound] = useState(null);
   const [formOpened, setFormOpened] = useState(true);
@@ -11,18 +12,24 @@ const Dashboard = () => {
   const API = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // Fetch the current round status from your backend when the component mounts
-    getRound();
-    getFeedbackFormStatus();
-    axios
-      .get(`${API}/api/form`)
-      .then((response) => {
-        setFormOpened(response.data.state);
-      })
-      .catch((error) => {
-        console.error("Error fetching courses:", error);
-      });
-  }, []);
+    // Fetch all initial data in parallel
+    const fetchInitialData = async () => {
+      try {
+        const [roundData, feedbackRes, formRes] = await Promise.all([
+          fetch(`${API}/api/rd/currentround`).then((res) => res.json()),
+          axios.get(`${API}/api/feedback/status`),
+          axios.get(`${API}/api/form`)
+        ]);
+        setCurrentRound(roundData.currentRound);
+        setFeedbackForm(feedbackRes.data.active);
+        setFormOpened(formRes.data.state);
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+      }
+    };
+
+    fetchInitialData();
+  }, [API]);
 
   const getRound = () => {
     fetch(`${API}/api/rd/currentround`)
@@ -30,21 +37,20 @@ const Dashboard = () => {
       .then((data) => {
         setCurrentRound(data.currentRound);
       })
-      .catch((error) => console.error("Error fetching round status: " + error));
+      .catch((error) =>
+        console.error("Error fetching round status: " + error)
+      );
   };
 
   const toggleRound = () => {
     if (currentRound !== null) {
-      // If a round is ongoing, end it
       endCurrentRound();
     } else {
-      // If no round is ongoing, start a new round
       startNewRound();
     }
   };
 
   const startNewRound = () => {
-    // Send a POST request to start a new round
     fetch(`${API}/api/rd/startround`, { method: "POST" })
       .then((response) => {
         if (response.status === 201) {
@@ -59,7 +65,6 @@ const Dashboard = () => {
         }
       })
       .then((data) => {
-        // Update the current round status with the new round number
         setCurrentRound(data.currentRound);
         getRound();
       })
@@ -69,7 +74,6 @@ const Dashboard = () => {
   };
 
   const endCurrentRound = () => {
-    // Send a POST request to end the current round
     fetch(`${API}/api/rd/endround`, { method: "POST" })
       .then((response) => {
         if (response.status === 200) {
@@ -84,7 +88,6 @@ const Dashboard = () => {
         }
       })
       .then(() => {
-        // Update the current round status to indicate no ongoing round
         setCurrentRound(null);
         getRound();
       })
@@ -95,18 +98,13 @@ const Dashboard = () => {
   };
 
   const resetRounds = () => {
-    // Send a POST request to reset rounds
     fetch(`${API}/api/rd/resetrounds`, { method: "POST" })
       .then((response) => response.json())
       .then(() => {
-        // Handle success (e.g., show a success message)
-
-        setCurrentRound(null); // Reset current round information
-
+        setCurrentRound(null);
         getRound();
       })
       .catch((error) => {
-        // Handle errors (e.g., show an error message)
         console.error("Error resetting rounds: " + error);
       });
   };
@@ -115,7 +113,7 @@ const Dashboard = () => {
     try {
       Swal.fire({
         title: "Are you sure?",
-        text: "You won't be able to revert this!",
+        text: "This will start a new semester and archive old data!",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
@@ -123,10 +121,15 @@ const Dashboard = () => {
         confirmButtonText: "Yes",
       }).then(async (result) => {
         if (result.isConfirmed) {
+          const currentSemester = "Winter-2026";
           const res = await fetch(`${API}/api/new/semester`, {
             method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ currentSemester }),
           });
-          setCurrentRound(null); // Reset current round information
+          setCurrentRound(null);
           getRound();
           if (res.status === 200) {
             await Swal.fire("Success", "New Semester Started", "success");
@@ -142,26 +145,24 @@ const Dashboard = () => {
   };
 
   const openForm = async () => {
-    const response = await fetch(`${API}/api/form/changeState`, {
+    await fetch(`${API}/api/form/changeState`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ state: true }),
     });
-    // Reload the page after the form state is changed
     window.location.reload();
   };
 
   const closeForm = async () => {
-    const response = await fetch(`${API}/api/form/changeState`, {
+    await fetch(`${API}/api/form/changeState`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ state: false }),
     });
-    // Reload the page after the form state is changed
     window.location.reload();
   };
 
@@ -169,8 +170,7 @@ const Dashboard = () => {
     fetch(`${API}/api/feedback/start`, { method: "GET" })
       .then((response) => {
         if (response.status === 200) {
-          // Perform any necessary actions after successful feedback generation
-          getFeedbackFormStatus(); // Update feedback form status after starting feedback
+          getFeedbackFormStatus();
         } else {
           console.error("Failed to initiate feedback generation");
         }
@@ -185,120 +185,121 @@ const Dashboard = () => {
       .get(`${API}/api/feedback/status`)
       .then((response) => {
         setFeedbackForm(response.data.active);
-        // Log the updated feedback form status
       })
       .catch((error) => {
         console.error("Error fetching feedback form status:", error);
       });
   };
+
   const handleSynchronize = async () => {
     try {
-        console.log("Triggering database synchronization...");
-        const response = await axios.post(`${API}/api/admin/syncDatabase`);
-        alert("Synchronization completed: " + response.data.message);
+      console.log("Triggering database synchronization...");
+      const response = await axios.post(`${API}/api/admin/syncDatabase`);
+      alert("Synchronization completed: " + response.data.message);
     } catch (error) {
-        alert("Synchronization failed: " + (error.response?.data?.message || error.message));
+      alert(
+        "Synchronization failed: " +
+          (error.response?.data?.message || error.message)
+      );
     }
-};
-  const closeFeedbackForm = () => {
-    axios
-      .post(`${API}/api/feedback/end`)
-      .then((response) => {
-        if (response.status === 200) {
-          getFeedbackFormStatus();
-          // Perform any necessary actions after successful closing of feedback form
-        } else {
-          console.error("Failed to close feedback form");
-        }
-      })
-      .catch((error) => {
-        console.error("Error closing feedback form:", error);
-      });
   };
-  
+
+  // somewhere in your UI logic
+const closeFeedbackForm = () => {
+  axios
+    .post(`${API}/api/feedback/close`)
+    .then((response) => {
+      console.log(response.data.message);   // e.g. "Feedback form closed for Spring 2025."
+      getFeedbackFormStatus();              // refresh your status indicator
+    })
+    .catch((error) => {
+      console.error("Error closing feedback form:", error.response?.data || error.message);
+    });
+};
+
+  const buttonClass =
+  "bg-[#3dafaa] text-white font-bold text-base py-2 px-4 rounded-full focus:outline-none focus:shadow-outline transition-colors duration-200";
+
   return (
-    <div>
-      <div className="mb-4 space-x-4 flex">
-        {formOpened ? (
-          <button
-            onClick={closeForm}
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Close TA Form
-          </button>
-        ) : (
-          <button
-            onClick={openForm}
-            className="bg-[#3dafaa] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Open TA Form
-          </button>
-        )}
-        <div className="font-bold text-2xl">
-          {formOpened ? "Form is opened" : "Form is closed"}
+    <div className="p-6 bg-gray-100 min-h-screen -ml-4">
+      {/* Top Section */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
+        {/* TA Form Section */}
+        <div className="flex items-center space-x-4">
+          {formOpened ? (
+            <button onClick={closeForm} className={`${buttonClass} bg-red-500 hover:bg-red-600`}>
+              Close TA Form
+            </button>
+          ) : (
+            <button onClick={openForm} className={buttonClass}>
+              Open TA Form
+            </button>
+          )}
+          <div className="text-lg font-semibold">
+            {formOpened ? "Form is opened" : "Form is closed"}
+          </div>
+        </div>
+
+        {/* Ongoing Round Section */}
+        <div className="flex items-center space-x-2">
+          <span className="text-lg font-semibold">Ongoing Round:</span>
+          <span className="text-lg">
+            {currentRound === null ? "No Round is going on" : currentRound}
+          </span>
+        </div>
+
+        {/* Admin Management (visible on larger screens) */}
+        <div className="hidden md:block">
+          <AdminManagement />
         </div>
       </div>
 
-      <div className="flex">
-        <p className="font-bold text-2xl">Ongoing Round:</p>
-        <p className="text-2xl ml-2">
-          {currentRound === null ? "No Round is going on" : currentRound}
-        </p>
-      </div>
-        <div style={{display :'grid' ,top : '20px', gap : '20px', position:'fixed',right : '40px', width : '20vw' }}>
-            <h1 className="text-2xl font-bold"></h1>
-            <AdminManagement />
-        </div>  
-      <div className="flex mt-3">
+      {/* Button Actions */}
+      <div className="flex flex-wrap gap-4 mb-6">
         <button
           onClick={toggleRound}
-          className={
+          className={`${buttonClass} ${
             currentRound === null
-              ? "bg-[#3dafaa] hover:bg-green-600 text-white font-bold py-2 px-4 mr-4 rounded focus:outline-none focus:shadow-outline w-32"
-              : "w-32 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 mr-4 rounded focus:outline-none focus:shadow-outline"
-          }
+              ? ""  
+              : "bg-red-500 hover:bg-red-600"
+          }`}
         >
           {currentRound === null ? "Start Round" : "End Round"}
         </button>
-        <button
-          onClick={resetRounds}
-          className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 mr-4 rounded focus:outline-none focus:shadow-outline"
-        >
+
+        <button onClick={resetRounds} className={buttonClass}>
           Reset Rounds
         </button>
-        <button
-          onClick={startNewSemester}
-          className="bg-black text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-4"
-        >
+
+        <button onClick={startNewSemester} className={buttonClass}>
           New Semester
         </button>
+
         {feedbackForm ? (
           <button
             onClick={closeFeedbackForm}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-4"
-          >
+            className="bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-1 px-3 rounded-full focus:outline-none focus:shadow-outline transition-colors duration-200"
+            >
             End Feedback Form
           </button>
         ) : (
-          <button
-            onClick={startFeedback}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-4"
-          >
+          <button onClick={startFeedback} className={buttonClass}>
             Start Feedback Form
           </button>
         )}
-        <div>
-            <button onClick={handleSynchronize}
-            className="bg-[#3dafaa] hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-4"
-            >Synchronize Database</button>
-        </div>
+
+        <button onClick={handleSynchronize} className={buttonClass}>
+          Synchronize Database
+        </button>
       </div>
 
-      {/* Include your DashboardCardList component here */
-      }
-      
-        
+      {/* Dashboard Cards Section */}
       <DashboardCardList />
+
+      {/* Admin Management for smaller screens */}
+      <div className="mt-6 md:hidden">
+        <AdminManagement />
+      </div>
     </div>
   );
 };

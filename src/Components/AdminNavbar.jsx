@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import CourseContext from "../context/CourseContext";
@@ -6,117 +6,57 @@ import ProfContext from "../context/ProfContext";
 import StudentContext from "../context/StudentContext";
 
 const AdminNav = () => {
-  // Define the function to handle file changes (you'll need to implement this function)
-
-  let { getStudentsFromFile } = useContext(StudentContext);
-  let { getCourseFromFile } = useContext(CourseContext);
-  let { getProfessorFromFile } = useContext(ProfContext);
-
-  const [loading, setLoading] = useState(false);
-
-  const handleFileChange = async (event) => {
-    setLoading(true);
-    if (isCourseRoute) {
-      await getCourseFromFile(event, setLoading);
-    } else if (isStudentRoute) {
-      await getStudentsFromFile(event, setLoading);
-    } else if (isProfessor) {
-      await getProfessorFromFile(event, setLoading);
-    }
-  };
+  const { getStudentsFromFile } = useContext(StudentContext);
+  const { getCourseFromFile } = useContext(CourseContext);
+  const { getProfessorFromFile } = useContext(ProfContext);
 
   const location = useLocation();
-  const isCourseRoute = location.pathname === "/admin/course";
-  const isAllocate = location.pathname === "/admin/allocate";
-  const isDashboard = location.pathname === "/admin/dashboard";
-  const isLogs = location.pathname === "/admin/log";
-  const isDepartment = location.pathname === "/admin/department";
-  const isStudentRoute = location.pathname === "/admin/student";
-  const isProfessor = location.pathname === "/admin/professors";
+  const [loading, setLoading] = useState(false);
 
-  const [title, setTitle] = useState("Eligible Students of Monsoon 2023");
-  const [buttontext, setButtonText] = useState("Student");
+  const routeMap = useMemo(
+    () => ({
+      "/admin/course": { title: "Available Courses", buttonText: "Course", handler: getCourseFromFile },
+      "/admin/student": { title: "Eligible Students for TAship", buttonText: "Student", handler: getStudentsFromFile },
+      "/admin/professors": { title: "Faculties For Current Semester", buttonText: "Faculty", handler: getProfessorFromFile },
+      "/admin/department": { title: "Available Courses", buttonText: null },
+    }),
+    [getCourseFromFile, getStudentsFromFile, getProfessorFromFile]
+  );
 
-  const updateButton = () => {
-    if (isCourseRoute) {
-      setButtonText("Course");
-    } else if (isStudentRoute) {
-      setButtonText("Student");
-    } else if (isProfessor) {
-      setButtonText("Faculty");
-    }
+  const { title, buttonText, handler } = routeMap[location.pathname] || {
+    title: "TA Allocation Portal",
+    buttonText: null,
+    handler: null,
   };
 
-  const updateTitle = () => {
-    if (isDepartment || isCourseRoute) {
-      setTitle("Available Courses");
-    } else if (isStudentRoute) {
-      setTitle("Eligible Students for TAship");
-    } else if (isProfessor) {
-      setTitle("Faculties For Current Semester");
-    } else {
-      setTitle("TA Allocation Portal");
-    }
-  };
-
-  useEffect(() => {
-    updateTitle();
-    updateButton();
-  }, [isAllocate, isCourseRoute, isProfessor]);
-
-  const renderSearchBarAndUploadButton = () => {
-    if (!isCourseRoute && !isStudentRoute && !isProfessor) {
-      return null;
-    } else {
-      return (
-        <div className="flex items-center justify-end mt-4">
-          {loading ? (
-            <div className="flex justify-center">
-              <ClipLoader
-                color={"#3dafaa"}
-                loading={loading}
-                size={30}
-                aria-label="Loading Spinner"
-                data-testid="loader"
-              />
-            </div>
-          ) : (
-            <div className="justify-between flex">
-              {/* Upload XLSX button */}
-              <label className="bg-[#3dafaa] text-white px-4 py-2 rounded cursor-pointer font-bold">
-                Upload {buttontext} XLSX
-                <input
-                  type="file"
-                  accept=".xlsx"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </label>
-            </div>
-          )}
-        </div>
-      );
+  const handleFileChange = async (event) => {
+    if (handler) {
+      setLoading(true);
+      await handler(event, setLoading);
     }
   };
 
   return (
-    <div className="bg-white flex justify-between">
-      <div className="flex items-center">
-        {/* Image */}
-        <img
-          className="h-16 relative pt-5"
-          src="/images/iiitd_img.png"
-          alt="IIITD Logo"
-        />
-
-        {/* Text beside the image */}
-        <div className="ml-2 flex items-center">
-          <h3 className="font-bold text-center">{title}</h3>
-        </div>
+    <div className="bg-white flex justify-between items-center p-4">
+      {/* Left Side: Logo and Title */}
+      <div className="flex items-center flex-grow">
+        <img className="h-10 w-auto" src="/images/iiitd.png" alt="IIITD Logo" />
+        <h3 className="font-bold text-2xl text-center flex-grow">{title}</h3>
       </div>
 
-      {/* Second row */}
-      <div className="mr-6">{renderSearchBarAndUploadButton()}</div>
+      {/* Right Side: Upload Button & Loader */}
+      {buttonText && (
+        <div className="mr-6">
+          {loading ? (
+            <ClipLoader color="#ADD8E6" loading={loading} size={30} />
+          ) : (
+            <label className="bg-[#6495ED] text-white px-4 py-2 rounded-full cursor-pointer font-bold">
+              Upload {buttonText} XLSX
+              <input type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
+            </label>
+          )}
+        </div>
+      )}
     </div>
   );
 };
